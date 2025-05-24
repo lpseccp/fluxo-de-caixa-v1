@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fluxo de Caixa</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f0f2f5;
+    }
+    h1 {
+      color: #2c3e50;
+    }
+    input, button {
+      margin: 5px 0;
+      padding: 10px;
+      width: 100%;
+    }
+    section {
+      margin-bottom: 20px;
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .alerta-negativo {
+      color: red;
+      font-weight: bold;
+    }
+    canvas {
+      max-width: 400px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Controle de Fluxo de Caixa</h1>
+
+  <section>
+    <h2>Saldo em Caixa</h2>
+    <input type="number" id="caixa" placeholder="R$ em caixa" />
+  </section>
+
+  <section>
+    <h2>Recebíveis</h2>
+    <input type="number" id="receberValor" placeholder="Valor a receber" />
+    <input type="date" id="receberData" />
+    <button onclick="adicionarRecebivel()">Adicionar Recebível</button>
+    <ul id="listaRecebiveis"></ul>
+  </section>
+
+  <section>
+    <h2>Dívidas</h2>
+    <input type="number" id="dividaValor" placeholder="Valor da dívida" />
+    <input type="date" id="dividaData" />
+    <button onclick="adicionarDivida()">Adicionar Dívida</button>
+    <ul id="listaDividas"></ul>
+  </section>
+
+  <section>
+    <h2>Resumo</h2>
+    <p id="resumo"></p>
+    <canvas id="graficoPizza"></canvas>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    let recebiveis = [];
+    let dividas = [];
+
+    function adicionarRecebivel() {
+      const valor = parseFloat(document.getElementById('receberValor').value);
+      const data = document.getElementById('receberData').value;
+      if (valor && data) {
+        recebiveis.push({ valor, data });
+        atualizar();
+      }
+    }
+
+    function adicionarDivida() {
+      const valor = parseFloat(document.getElementById('dividaValor').value);
+      const data = document.getElementById('dividaData').value;
+      if (valor && data) {
+        dividas.push({ valor, data });
+        atualizar();
+      }
+    }
+
+    function atualizar() {
+      const caixa = parseFloat(document.getElementById('caixa').value) || 0;
+
+      const totalReceber = recebiveis.reduce((acc, r) => acc + r.valor, 0);
+      const totalDividas = dividas.reduce((acc, d) => acc + d.valor, 0);
+      const saldoFinal = caixa + totalReceber - totalDividas;
+
+      document.getElementById('listaRecebiveis').innerHTML = recebiveis.map(r => 
+        `<li>R$ ${r.valor.toFixed(2)} - ${r.data}</li>`).join('');
+      document.getElementById('listaDividas').innerHTML = dividas.map(d => 
+        `<li>R$ ${d.valor.toFixed(2)} - ${d.data}</li>`).join('');
+
+      const resumo = `Saldo atual: R$ ${caixa.toFixed(2)}<br>
+        A receber: R$ ${totalReceber.toFixed(2)}<br>
+        Dívidas: R$ ${totalDividas.toFixed(2)}<br>
+        <strong ${saldoFinal < 0 ? 'class="alerta-negativo"' : ''}>
+          Saldo previsto: R$ ${saldoFinal.toFixed(2)}
+        </strong>`;
+
+      document.getElementById('resumo').innerHTML = resumo;
+
+      atualizarGrafico(caixa, totalReceber, totalDividas);
+    }
+
+    let grafico;
+    function atualizarGrafico(caixa, recebiveis, dividas) {
+      const ctx = document.getElementById('graficoPizza').getContext('2d');
+      if (grafico) grafico.destroy();
+      grafico = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['Caixa', 'Recebíveis', 'Dívidas'],
+          datasets: [{
+            data: [caixa, recebiveis, dividas],
+            backgroundColor: ['#2ecc71', '#3498db', '#e74c3c']
+          }]
+        }
+      });
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log('Service Worker registrado com sucesso.'))
+        .catch(err => console.error('Erro ao registrar o Service Worker:', err));
+    }
+  </script>
+</body>
+</html>
