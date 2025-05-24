@@ -41,7 +41,7 @@
 
   <section>
     <h2>Saldo em Caixa</h2>
-    <input type="number" id="caixa" placeholder="R$ em caixa" />
+    <input type="number" id="caixa" placeholder="R$ em caixa" oninput="salvarCaixa()" />
   </section>
 
   <section>
@@ -68,14 +68,20 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    let recebiveis = [];
-    let dividas = [];
+    let recebiveis = JSON.parse(localStorage.getItem('recebiveis')) || [];
+    let dividas = JSON.parse(localStorage.getItem('dividas')) || [];
+
+    function salvarCaixa() {
+      localStorage.setItem('caixa', document.getElementById('caixa').value);
+      atualizar();
+    }
 
     function adicionarRecebivel() {
       const valor = parseFloat(document.getElementById('receberValor').value);
       const data = document.getElementById('receberData').value;
       if (valor && data) {
         recebiveis.push({ valor, data });
+        localStorage.setItem('recebiveis', JSON.stringify(recebiveis));
         atualizar();
       }
     }
@@ -85,6 +91,7 @@
       const data = document.getElementById('dividaData').value;
       if (valor && data) {
         dividas.push({ valor, data });
+        localStorage.setItem('dividas', JSON.stringify(dividas));
         atualizar();
       }
     }
@@ -129,6 +136,16 @@
       });
     }
 
+    // Inicializar
+    window.onload = () => {
+      const valorCaixa = localStorage.getItem('caixa');
+      if (valorCaixa) {
+        document.getElementById('caixa').value = valorCaixa;
+      }
+      atualizar();
+    };
+
+    // PWA
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
         .then(() => console.log('Service Worker registrado com sucesso.'))
